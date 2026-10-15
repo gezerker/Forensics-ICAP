@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICAP Test Bench</title>
+<style>
+:root {
+  --bg: #f5f6f8; --panel: #ffffff; --text: #1d2330; --muted: #667085; --border: #e2e5ea;
+  --accent: #2f6fed; --accent-weak: #e8effd; --ok: #138a4b; --ok-weak: #e3f5eb;
+  --warn: #b26b00; --warn-weak: #fdf2e0; --err: #c4302b; --err-weak: #fde8e7;
+  --code-bg: #f1f3f6; --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --panel: #1a1e26; --text: #e6e9ef; --muted: #8d96a7; --border: #2b313d;
+    --accent: #6c9bff; --accent-weak: #1d2a44; --ok: #4cc98a; --ok-weak: #15301f;
+    --warn: #f0b04d; --warn-weak: #33270f; --err: #ff6b63; --err-weak: #3a1a19; --code-bg: #11141a;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  background: var(--panel); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 17px; margin: 0; }
+header .sub { color: var(--muted); font-size: 13px; }
+header .spacer { flex: 1; }
+main { display: grid; grid-template-columns: 340px 1fr; gap: 16px; padding: 16px 20px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px; } }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.card + .card { margin-top: 16px; }
+.card h2 { font-size: 14px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.card h2 .right { margin-left: auto; font-weight: normal; }
+label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+label.inline { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 13px; margin: 8px 0; }
+input[type=text], input[type=number], input[type=email], input[type=tel], select, textarea {
+  width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--bg); color: var(--text); font: inherit; }
+textarea { min-height: 80px; resize: vertical; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+fieldset { border: none; padding: 0; margin: 14px 0 0; }
+legend { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 0; }
+button { font: inherit; border-radius: 7px; border: 1px solid var(--border); background: var(--panel);
+  color: var(--text); padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.small { padding: 3px 8px; font-size: 12px; }
+button:disabled { opacity: .55; cursor: default; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; background: var(--code-bg); color: var(--muted); white-space: nowrap; }
+.pill.ok { background: var(--ok-weak); color: var(--ok); }
+.pill.warn { background: var(--warn-weak); color: var(--warn); }
+.pill.err { background: var(--err-weak); color: var(--err); }
+.pill.info { background: var(--accent-weak); color: var(--accent); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px -16px 14px; padding: 0 12px; overflow-x: auto; }
+.tab { border: none; background: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 9px 12px; color: var(--muted); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.panel { display: none; } .panel.active { display: block; }
+.drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 22px; text-align: center; color: var(--muted); cursor: pointer; }
+.drop.over { border-color: var(--accent); background: var(--accent-weak); }
+.filelist { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.filelist li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.muted { color: var(--muted); }
+.hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+pre { background: var(--code-bg); padding: 10px; border-radius: 7px; overflow: auto; max-height: 320px; margin: 6px 0 0; white-space: pre-wrap; word-break: break-all; }
+.result { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-top: 10px; }
+.result .top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.result .url { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); word-break: break-all; margin-top: 6px; }
+.result ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+details summary { cursor: pointer; color: var(--muted); font-size: 12px; margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+tr.clickable { cursor: pointer; } tr.clickable:hover td { background: var(--accent-weak); }
+tr.flash td { animation: flash 2s ease-out; }
+@keyframes flash { from { background: var(--ok-weak); } to { background: transparent; } }
+.tablewrap { overflow-x: auto; }
+.trunc { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--text);
+  width: min(900px, calc(100vw - 32px)); max-height: calc(100vh - 60px); padding: 0; }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog .dhead { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }
+dialog .dbody { padding: 16px; }
+.kv { display: grid; grid-template-columns: 140px 1fr; gap: 4px 12px; font-size: 13px; }
+.kv div:nth-child(odd) { color: var(--muted); }
+.kv div:nth-child(even) { word-break: break-all; }
+.empty { color: var(--muted); text-align: center; padding: 18px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ICAP Test Bench</h1>
+  <span class="sub">Forensics-ICAP</span>
+  <span class="spacer"></span>
+  <span id="connPill" class="pill">not checked</span>
+</header>
+
+<main>
+  <!-- ======================= CONFIG ======================= -->
+  <section>
+    <div class="card">
+      <h2>ICAP server</h2>
+      <form id="cfgForm" autocomplete="off">
+        <div class="row3">
+          <div><label>Host</label><input type="text" name="icap_host"></div>
+          <div><label>Port</label><input type="number" name="icap_port" min="1" max="65535"></div>
+        </div>
+        <div class="row">
+          <div><label>REQMOD service</label><input type="text" name="reqmod_service"></div>
+          <div><label>RESPMOD service</label><input type="text" name="respmod_service"></div>
+        </div>
+        <label class="inline"><input type="checkbox" name="use_tls"> Use ICAPS (TLS)</label>
+        <label class="inline"><input type="checkbox" name="tls_verify"> Verify TLS certificate</label>
+        <label class="inline"><input type="checkbox" name="allow_204"> Send <code>Allow: 204</code></label>
+        <div class="row">
+          <div><label>Preview bytes (-1 = off)</label><input type="number" name="preview" min="-1"></div>
+          <div><label>Timeout (s)</label><input type="number" name="timeout" min="1"></div>
+        </div>
+
+        <fieldset>
+          <legend>Simulated user</legend>
+          <div class="row">
+            <div><label>X-Client-IP</label><input type="text" name="client_ip"></div>
+            <div><label>User</label><input type="text" name="username"></div>
+          </div>
+          <label>User-Agent</label><input type="text" name="user_agent">
+        </fieldset>
+
+        <fieldset>
+          <legend>Simulated destinations</legend>
+          <label>Upload URL (REQMOD)</label><input type="text" name="target_url">
+          <label>Web form URL (REQMOD)</label><input type="text" name="form_url">
+          <label>Download base URL (RESPMOD)</label><input type="text" name="download_url">
+        </fieldset>
+
+        <fieldset>
+          <legend>Capture verification</legend>
+          <label>Capture directory (local path)</label><input type="text" name="capture_dir">
+          <div class="hint">Where the ICAP server writes <code>index.jsonl</code>. Used to confirm each test was captured.</div>
+        </fieldset>
+
+        <div class="btns">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="btnOptions">Test connection</button>
+          <button type="button" id="btnReset">Defaults</button>
+        </div>
+        <div id="cfgMsg" class="hint"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Local ICAP server <span class="right" id="localPill"></span></h2>
+      <div class="hint" style="margin-top:0">Optional. Runs <code>icap_server.py</code> from this repo on the host/port above, writing to the capture directory. Not needed if your Podman container is already running.</div>
+      <div class="btns">
+        <button type="button" id="btnStartLocal">Start</button>
+        <button type="button" id="btnStopLocal">Stop</button>
+      </div>
+      <details><summary>Server log</summary><pre id="localLog">(empty)</pre></details>
+    </div>
+  </section>
+
+  <!-- ======================= TESTS ======================= -->
+  <section>
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="upload">File upload</button>
+        <button class="tab" data-tab="form">Web form</button>
+        <button class="tab" data-tab="download">Download (RESPMOD)</button>
+        <button class="tab" data-tab="raw">Raw body</button>
+      </div>
+
+      <!-- Upload -->
+      <div class="panel active" id="panel-upload">
+        <div class="drop" id="dropUpload">Drop files here or click to choose<input type="file" id="fileUpload" multiple hidden></div>
+        <ul class="filelist" id="listUpload"></ul>
+        <div class="row">
+          <div><label>Extra form field: description</label><input type="text" id="uploadComment" value="Q3 numbers - do not share"></div>
+          <div><label>Send as</label>
+            <select id="uploadMode">
+              <option value="one">One request with all files</option>
+              <option value="each">One request per file</option>
+            </select></div>
+        </div>
+        <div class="btns">
+          <button class="primary" id="btnUpload">Send upload via REQMOD</button>
+          <button id="btnSamples">Add sample files</button>
+          <button id="btnClearFiles">Clear</button>
+        </div>
+        <div class="hint">Sent as <code>multipart/form-data</code>, just like a browser upload. The server should split each file into <code>parts/</code>.</div>
+      </div>
+
+      <!-- Web form -->
+      <div class="panel" id="panel-form">
+        <form id="webForm" autocomplete="off">
+          <div class="row">
+            <div><label>Full name</label><input type="text" name="full_name" value="Alice Example"></div>
+            <div><label>Email</label><input type="email" name="email" value="alice@example.com"></div>
+          </div>
+          <div class="row">
+            <div><label>Phone</label><input type="tel" name="phone" value="+1 555 0100"></div>
+            <div><label>Company</label><input type="text" name="company" value="Acme Corp"></div>
+          </div>
+          <div class="row">
+            <div><label>Card number (test)</label><input type="text" name="card_number" value="4111 1111 1111 1111"></div>
+            <div><label>Subject</label>
+              <select name="subject"><option>Sales inquiry</option><option>Support</option><option>Confidential</option></select></div>
+          </div>
+          <label>Message</label>
+          <textarea name="message">Hi team, please find our internal project codename "BLUEBIRD" and the draft pricing attached. Password for the share is Summer2026!</textarea>
+          <label class="inline"><input type="checkbox" name="newsletter" value="yes" checked> Subscribe to newsletter</label>
+        </form>
+        <div class="row">
+          <div><label>Encoding</label>
+            <select id="formEnc">
+              <option value="urlencoded">application/x-www-form-urlencoded</option>
+              <option value="multipart">multipart/form-data</option>
+              <option value="json">application/json (XHR/fetch)</option>
+            </select></div>
+          <div><label>HTTP method</label>
+            <select id="formMethod"><option>POST</option><option>PUT</option></select></div>
+        </div>
+        <div class="btns"><button class="primary" id="btnForm">Submit form via REQMOD</button></div>
+      </div>
+
+      <!-- Download -->
+      <div class="panel" id="panel-download">
+        <div class="drop" id="dropDownload">Drop a file to simulate the user downloading it<input type="file" id="fileDownload" hidden></div>
+        <ul class="filelist" id="listDownload"></ul>
+        <div class="btns">
+          <button class="primary" id="btnDownload">Send download via RESPMOD</button>
+          <button id="btnSampleHtml">Use sample HTML page</button>
+        </div>
+        <div class="hint">Wrapped as an HTTP <code>200 OK</code> response to a GET, with <code>Content-Disposition: attachment</code>.</div>
+      </div>
+
+      <!-- Raw -->
+      <div class="panel" id="panel-raw">
+        <div class="row">
+          <div><label>Content-Type</label><input type="text" id="rawType" value="application/json"></div>
+          <div><label>Mode</label>
+            <select id="rawMode"><option value="upload">REQMOD (POST to upload URL)</option><option value="download">RESPMOD (download)</option></select></div>
+        </div>
+        <label>Body</label>
+        <textarea id="rawBody" style="min-height:140px">{"event":"chat_message","to":"external@gmail.com","text":"Customer list attached: 4111-1111-1111-1111"}</textarea>
+        <div class="btns"><button class="primary" id="btnRaw">Send raw body</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Results <span class="right"><button class="small" id="btnClearResults">Clear</button></span></h2>
+      <div id="results"><div class="empty">Run a test to see the ICAP exchange and whether the server captured it.</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Recent captures <span class="muted" id="capDir" style="font-weight:normal;font-size:12px"></span>
+        <span class="right"><label class="inline" style="margin:0;display:inline-flex"><input type="checkbox" id="autoRefresh" checked> auto</label>
+        <button class="small" id="btnRefresh">Refresh</button></span></h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Time</th><th>Mode</th><th>User</th><th>HTTP</th><th>URL</th><th>Type</th><th>Bytes</th></tr></thead>
+          <tbody id="capBody"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="capDialog">
+  <div class="dhead"><strong id="capTitle">Capture</strong><span class="spacer" style="flex:1"></span><button class="small" onclick="capDialog.close()">Close</button></div>
+  <div class="dbody" id="capContent"></div>
+</dialog>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtBytes = n => n == null ? "–" : n < 1024 ? n + " B" : n < 1048576 ? (n/1024).toFixed(1) + " KB" : (n/1048576).toFixed(2) + " MB";
+const fmtTime = t => { try { return new Date(t).toLocaleTimeString(); } catch { return t; } };
+const files = { upload: [], download: [] };
+let knownIds = new Set();
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  const j = await r.json().catch(() => ({ ok: false, error: "HTTP " + r.status }));
+  if (!r.ok && j.ok === undefined) j.ok = false;
+  return j;
+}
+
+/* ---------- config ---------- */
+const cfgForm = $("#cfgForm");
+function fillConfig(cfg) {
+  for (const [k, v] of Object.entries(cfg)) {
+    const el = cfgForm.elements[k];
+    if (!el) continue;
+    if (el.type === "checkbox") el.checked = !!v; else el.value = v;
+  }
+}
+function readConfig() {
+  const out = {};
+  for (const el of cfgForm.elements) {
+    if (!el.name) continue;
+    out[el.name] = el.type === "checkbox" ? el.checked : el.value;
+  }
+  return out;
+}
+async function saveConfig(quiet) {
+  const j = await api("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(readConfig()) });
+  if (j.config) { fillConfig(j.config); if (!quiet) flashMsg("Saved."); }
+  else flashMsg(j.error || "Save failed", true);
+  return j;
+}
+function flashMsg(msg, bad) {
+  const el = $("#cfgMsg"); el.textContent = msg; el.style.color = bad ? "var(--err)" : "var(--ok)";
+  setTimeout(() => { el.textContent = ""; }, 3000);
+}
+cfgForm.addEventListener("submit", async e => { e.preventDefault(); await saveConfig(); checkConnection(); refreshCaptures(); });
+$("#btnReset").onclick = async () => {
+  const j = await api("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reset: true }) });
+  fillConfig(j.config); flashMsg("Defaults restored."); checkConnection(); refreshCaptures();
+};
+$("#btnOptions").onclick = async () => { await saveConfig(true); await checkConnection(true); };
+
+async function checkConnection(showResult) {
+  const pill = $("#connPill");
+  pill.className = "pill"; pill.textContent = "checking…";
+  const j = await api("/api/options", { method: "POST" });
+  if (j.ok) {
+    const r = j.response;
+    const srv = (r.headers.find(h => h[0].toLowerCase() === "server") || [])[1] || "";
+    pill.className = "pill ok"; pill.innerHTML = `<span class="dot"></span>ICAP ${r.code} · ${r.elapsed_ms} ms ${srv ? "· " + esc(srv) : ""}`;
+    if (showResult) addResult({ title: "OPTIONS", ok: r.code === 200, response: r });
+  } else {
+    pill.className = "pill err"; pill.innerHTML = `<span class="dot"></span>unreachable`;
+    pill.title = j.error;
+    if (showResult) addResult({ title: "OPTIONS", ok: false, error: j.error });
+  }
+}
+
+/* ---------- tabs ---------- */
+$$(".tab").forEach(t => t.onclick = () => {
+  $$(".tab").forEach(x => x.classList.toggle("active", x === t));
+  $$(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + t.dataset.tab));
+});
+
+/* ---------- file pickers ---------- */
+function setupDrop(dropId, inputId, key, single) {
+  const drop = $(dropId), input = $(inputId);
+  drop.onclick = () => input.click();
+  input.onchange = () => { addFiles(key, input.files, single); input.value = ""; };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); addFiles(key, e.dataTransfer.files, single); };
+}
+function addFiles(key, list, single) {
+  if (single) files[key] = [];
+  for (const f of list) { files[key].push(f); if (single) break; }
+  renderFiles(key);
+}
+function renderFiles(key) {
+  const ul = key === "upload" ? $("#listUpload") : $("#listDownload");
+  ul.innerHTML = files[key].map((f, i) =>
+    `<li><span>${esc(f.name)} <span class="muted">· ${esc(f.type || "unknown type")} · ${fmtBytes(f.size)}</span></span>
+     <button class="small" data-rm="${i}">remove</button></li>`).join("");
+  $$("[data-rm]", ul).forEach(b => b.onclick = () => { files[key].splice(+b.dataset.rm, 1); renderFiles(key); });
+}
+setupDrop("#dropUpload", "#fileUpload", "upload", false);
+setupDrop("#dropDownload", "#fileDownload", "download", true);
+$("#btnClearFiles").onclick = () => { files.upload = []; renderFiles("upload"); };
+
+function sampleFiles() {
+  const csv = "name,email,ssn,salary\nAlice Example,alice@example.com,078-05-1120,145000\nBob Sample,bob@example.com,219-09-9999,98000\n";
+  const txt = "CONFIDENTIAL - internal only\nProject BLUEBIRD roadmap draft\nAPI key (fake): AKIAIOSFODNN7EXAMPLE\n";
+  const json = JSON.stringify({ customer: "Acme", contract_value: 1250000, renewal: "2027-01-01" }, null, 2);
+  // Tiny valid PNG (1x1)
+  const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="), c => c.charCodeAt(0));
+  return [
+    new File([csv], "employees.csv", { type: "text/csv" }),
+    new File([txt], "notes-confidential.txt", { type: "text/plain" }),
+    new File([json], "contract.json", { type: "application/json" }),
+    new File([png], "screenshot.png", { type: "image/png" }),
+  ];
+}
+$("#btnSamples").onclick = () => addFiles("upload", sampleFiles(), false);
+$("#btnSampleHtml").onclick = () => {
+  const html = `<!doctype html><html><head><title>Quarterly report</title></head><body><h1>Q3 Report</h1><p>Revenue: $4.2M</p></body></html>`;
+  addFiles("download", [new File([html], "report.html", { type: "text/html" })], true);
+};
+
+/* ---------- sending ---------- */
+async function send(kind, body, extra = {}, label) {
+  const params = new URLSearchParams({ kind, ...extra });
+  const headers = {};
+  let payload = body;
+  // Build multipart ourselves via Request so we get the browser's boundary + Content-Type.
+  if (body instanceof FormData) {
+    const req = new Request("/", { method: "POST", body });
+    headers["Content-Type"] = req.headers.get("Content-Type");
+    payload = await req.arrayBuffer();
+  } else if (extra._type) {
+    headers["Content-Type"] = extra._type;
+  }
+  params.delete("_type");
+  const card = addResult({ title: label, pending: true });
+  const j = await api("/api/send?" + params, { method: "POST", headers, body: payload });
+  updateResult(card, { title: label, ok: j.ok, error: j.error, data: j, response: j.response });
+  if (j.ok) pollCapture(card, j.test_id);
+}
+
+$("#btnUpload").onclick = async () => {
+  if (!files.upload.length) addFiles("upload", sampleFiles(), false);
+  const comment = $("#uploadComment").value;
+  const groups = $("#uploadMode").value === "each" ? files.upload.map(f => [f]) : [files.upload];
+  for (const g of groups) {
+    const fd = new FormData();
+    if (comment) fd.append("description", comment);
+    g.forEach(f => fd.append("file", f, f.name));
+    await send("upload", fd, {}, `Upload · ${g.map(f => f.name).join(", ")}`);
+  }
+};
+
+$("#btnForm").onclick = async () => {
+  const fd = new FormData($("#webForm"));
+  const enc = $("#formEnc").value;
+  const method = $("#formMethod").value;
+  const label = `Web form · ${enc}`;
+  if (enc === "multipart") return send("form", fd, { http_method: method }, label);
+  if (enc === "json") return send("form", JSON.stringify(Object.fromEntries(fd)), { http_method: method, _type: "application/json" }, label);
+  return send("form", new URLSearchParams(fd).toString(), { http_method: method, _type: "application/x-www-form-urlencoded" }, label);
+};
+
+$("#btnDownload").onclick = async () => {
+  if (!files.download.length) $("#btnSampleHtml").click();
+  const f = files.download[0];
+  await send("download", await f.arrayBuffer(), { filename: f.name, _type: f.type || "application/octet-stream" }, `Download · ${f.name}`);
+};
+
+$("#btnRaw").onclick = async () => {
+  const mode = $("#rawMode").value;
+  const type = $("#rawType").value || "application/octet-stream";
+  const extra = { _type: type };
+  if (mode === "download") extra.filename = "raw-body.bin";
+  await send(mode, $("#rawBody").value, extra, `Raw · ${type}`);
+};
+
+/* ---------- results ---------- */
+function addResult(r) {
+  const box = $("#results");
+  if ($(".empty", box)) box.innerHTML = "";
+  const el = document.createElement("div");
+  el.className = "result";
+  box.prepend(el);
+  updateResult(el, r);
+  return el;
+}
+function headerTable(h) { return h.map(([k, v]) => `${k}: ${v}`).join("\n"); }
+function updateResult(el, r) {
+  const resp = r.response;
+  let status;
+  if (r.pending) status = `<span class="pill">sending…</span>`;
+  else if (!r.ok) status = `<span class="pill err">failed</span>`;
+  else status = `<span class="pill ${resp.code === 204 || resp.code === 200 ? "ok" : "warn"}">${esc(resp.status_line)}</span>`;
+  const d = r.data || {};
+  el.innerHTML = `
+    <div class="top"><strong>${esc(r.title)}</strong>${status}
+      ${resp ? `<span class="muted">${resp.elapsed_ms} ms</span>` : ""}
+      ${d.test_id ? `<span class="pill info">${esc(d.method)}</span><span class="muted" style="font-size:12px">test ${esc(d.test_id)}</span>` : ""}
+      <span style="flex:1"></span><span class="capstatus"></span></div>
+    ${d.url ? `<div class="url">${esc(d.url)}</div>` : ""}
+    ${r.error ? `<pre style="color:var(--err)">${esc(r.error)}</pre>` : ""}
+    ${resp && resp.log ? `<ul>${resp.log.map(l => `<li>${esc(l)}</li>`).join("")}</ul>` : ""}
+    ${resp ? `<details><summary>ICAP request / response</summary>
+      <pre>${esc(resp.request)}${resp.encapsulated ? esc(resp.encapsulated) : ""}${resp.body_bytes ? `[… ${resp.body_bytes} body bytes, chunked …]` : ""}</pre>
+      <pre>${esc(resp.status_line)}\n${esc(headerTable(resp.headers))}${resp.returned_http_headers ? "\n\n" + esc(resp.returned_http_headers) : ""}</pre></details>` : ""}`;
+}
+$("#btnClearResults").onclick = () => { $("#results").innerHTML = `<div class="empty">No results.</div>`; };
+
+async function pollCapture(card, id) {
+  const slot = $(".capstatus", card);
+  slot.innerHTML = `<span class="pill">looking for capture…</span>`;
+  for (let i = 0; i < 12; i++) {
+    const j = await api("/api/find?id=" + id);
+    if (j.found) {
+      const rec = j.record;
+      slot.innerHTML = `<span class="pill ok"><span class="dot"></span>captured · ${fmtBytes(rec.bytes)}</span> <button class="small">View</button>`;
+      $("button", slot).onclick = () => openCapture(rec.path);
+      refreshCaptures(rec.id);
+      return;
+    }
+    if (j.error) break;
+    await new Promise(r => setTimeout(r, 500));
+  }
+  slot.innerHTML = `<span class="pill warn" title="Check the capture directory setting, or that SAVE_EMPTY / permissions allow writing">not found in capture dir</span>`;
+}
+
+/* ---------- captures ---------- */
+async function refreshCaptures(highlight) {
+  const j = await api("/api/captures?limit=30");
+  $("#capDir").textContent = j.capture_dir ? "· " + j.capture_dir : "";
+  const tb = $("#capBody");
+  if (!j.available) { tb.innerHTML = `<tr><td colspan="7" class="empty">No <code>index.jsonl</code> in this directory yet. Check the capture directory setting.</td></tr>`; return; }
+  if (!j.records.length) { tb.innerHTML = `<tr><td colspan="7" class="empty">No captures yet.</td></tr>`; return; }
+  const fresh = knownIds.size ? j.records.filter(r => !knownIds.has(r.id)).map(r => r.id) : [];
+  knownIds = new Set(j.records.map(r => r.id));
+  tb.innerHTML = j.records.map(r => `
+    <tr class="clickable ${r.id === highlight || fresh.includes(r.id) ? "flash" : ""}" data-path="${esc(r.path)}">
+      <td>${esc(fmtTime(r.time))}</td><td>${esc(r.method)}</td><td>${esc(r.user || "–")}</td>
+      <td>${esc(r.http_method || "")}${r.status ? " " + r.status : ""}</td>
+      <td class="trunc" title="${esc(r.url)}">${esc(r.url || "–")}</td>
+      <td class="trunc" style="max-width:160px" title="${esc(r.content_type)}">${esc(r.content_type || "–")}</td>
+      <td>${fmtBytes(r.bytes)}</td></tr>`).join("");
+  $$("tr[data-path]", tb).forEach(tr => tr.onclick = () => openCapture(tr.dataset.path));
+}
+$("#btnRefresh").onclick = () => refreshCaptures();
+setInterval(() => { if ($("#autoRefresh").checked && !document.hidden) refreshCaptures(); }, 4000);
+
+const capDialog = $("#capDialog");
+async function openCapture(path) {
+  $("#capTitle").textContent = path;
+  $("#capContent").innerHTML = `<div class="empty">Loading…</div>`;
+  capDialog.showModal();
+  const j = await api("/api/capture?path=" + encodeURIComponent(path));
+  if (j.error) { $("#capContent").innerHTML = `<pre>${esc(j.error)}</pre>`; return; }
+  const m = j.metadata, ic = m.icap || {}, h = m.http || {}, c = m.capture || {};
+  const fileUrl = (f, dl) => `/api/capture/file?path=${encodeURIComponent(path + "/" + f)}${dl ? "&download=1" : ""}`;
+  $("#capContent").innerHTML = `
+    <div class="kv">
+      <div>Time</div><div>${esc(m.time)}</div>
+      <div>ICAP</div><div>${esc(ic.method)} ${esc(ic.uri)}</div>
+      <div>Peer</div><div>${esc(ic.peer)}</div>
+      <div>Client IP</div><div>${esc(ic.client_ip || "–")}</div>
+      <div>User</div><div>${esc(ic.user || "–")}</div>
+      <div>HTTP</div><div>${esc(h.request_line || "")}${h.status_line ? "<br>" + esc(h.status_line) : ""}</div>
+      <div>Content-Type</div><div>${esc(h.content_type || "–")}</div>
+      <div>Filename</div><div>${esc(h.filename || "–")}</div>
+      <div>Body</div><div>${fmtBytes(c.body_bytes)}${c.truncated ? " (truncated on disk)" : ""}</div>
+      <div>SHA-256</div><div><code>${esc(c.sha256 || "–")}</code></div>
+      <div>MD5</div><div><code>${esc(c.md5 || "–")}</code></div>
+    </div>
+    <h3 style="font-size:13px;margin:18px 0 6px">Files</h3>
+    <table><tbody>${j.files.map(f => `<tr><td><code>${esc(f.name)}</code></td><td>${fmtBytes(f.size)}</td>
+      <td style="text-align:right;white-space:nowrap"><button class="small" data-view="${esc(f.name)}">View</button>
+      <a href="${fileUrl(f.name, true)}"><button class="small">Download</button></a></td></tr>`).join("")}</tbody></table>
+    <pre id="filePreview" style="display:none"></pre>
+    <details><summary>metadata.json</summary><pre>${esc(JSON.stringify(m, null, 2))}</pre></details>`;
+  $$("[data-view]", $("#capContent")).forEach(b => b.onclick = async () => {
+    const r = await fetch(fileUrl(b.dataset.view));
+    const buf = new Uint8Array(await r.arrayBuffer());
+    const pv = $("#filePreview"); pv.style.display = "block";
+    const binary = buf.slice(0, 2048).some(x => x === 0);
+    pv.textContent = binary
+      ? `[binary, ${buf.length} bytes]\n` + [...buf.slice(0, 512)].map(x => x.toString(16).padStart(2, "0")).join(" ")
+      : new TextDecoder().decode(buf.slice(0, 200000));
+    pv.scrollIntoView({ block: "nearest" });
+  });
+}
+
+/* ---------- local server ---------- */
+async function refreshLocal() {
+  const j = await api("/api/local-server");
+  $("#localPill").innerHTML = j.running ? `<span class="pill ok"><span class="dot"></span>pid ${j.pid}</span>` : `<span class="pill">stopped</span>`;
+  $("#localLog").textContent = (j.log || []).join("\n") || "(empty)";
+}
+$("#btnStartLocal").onclick = async () => {
+  await saveConfig(true);
+  const j = await api("/api/local-server/start", { method: "POST" });
+  flashMsg("Local server: " + j.message, /exited/.test(j.message));
+  await refreshLocal(); checkConnection();
+};
+$("#btnStopLocal").onclick = async () => {
+  const j = await api("/api/local-server/stop", { method: "POST" });
+  flashMsg("Local server: " + j.message); refreshLocal(); checkConnection();
+};
+setInterval(() => { if (!document.hidden) refreshLocal(); }, 5000);
+
+/* ---------- init ---------- */
+(async () => {
+  const j = await api("/api/config");
+  fillConfig(j.config);
+  checkConnection();
+  refreshCaptures();
+  refreshLocal();
+})();
+</script>
+</body>
+</html>

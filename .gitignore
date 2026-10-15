@@ -1,0 +1,4 @@
+__pycache__/
+captures/
+*.pem
+testapp/config.json
