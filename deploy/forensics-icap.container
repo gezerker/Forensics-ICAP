@@ -1,0 +1,40 @@
+# Podman Quadlet unit: run the ICAP server as a systemd service.
+#
+# Rootless:  copy to ~/.config/containers/systemd/
+# Rootful:   copy to /etc/containers/systemd/
+# then:      systemctl [--user] daemon-reload
+#            systemctl [--user] start forensics-icap
+#
+# Captures land in the named volume "forensics-icap-data"
+# (podman volume inspect forensics-icap-data  -> Mountpoint).
+# To use a host directory instead, swap the Volume= line for e.g.
+#   Volume=/srv/forensics-icap:/data:Z
+# and add  UserNS=keep-id:uid=1001,gid=1001  so files are owned by you.
+
+[Unit]
+Description=Forensics ICAP capture server
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=localhost/forensics-icap:latest
+ContainerName=forensics-icap
+PublishPort=1344:1344
+Volume=forensics-icap-data:/data:Z
+Environment=LOG_LEVEL=INFO
+Environment=MAX_BODY_BYTES=104857600
+# ICAPS (TLS): mount a cert/key and uncomment
+#Volume=/etc/forensics-icap/certs:/certs:ro,Z
+#Environment=TLS_CERT=/certs/cert.pem TLS_KEY=/certs/key.pem ICAP_PORT=11344
+#PublishPort=11344:11344
+HealthCmd=python3 /app/icap_server.py --healthcheck
+HealthInterval=30s
+ReadOnly=true
+NoNewPrivileges=true
+DropCapability=ALL
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

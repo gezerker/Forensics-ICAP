@@ -1,0 +1,6 @@
+.git
+captures
+tests
+deploy
+*.pem
+__pycache__
