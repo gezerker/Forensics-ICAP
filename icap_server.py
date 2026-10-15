@@ -44,6 +44,8 @@ from email import policy
 from email.parser import BytesParser
 from urllib.parse import unquote
 
+import web_ui
+
 __version__ = "2.0.0"
 
 log = logging.getLogger("forensics-icap")
@@ -77,6 +79,10 @@ class Config:
         self.tls_cert = os.environ.get("TLS_CERT") or None
         self.tls_key = os.environ.get("TLS_KEY") or None
         self.log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+        # Read-only capture browser. WEB_PORT=0 turns it off. No authentication,
+        # so it binds to localhost unless WEB_HOST says otherwise.
+        self.web_host = os.environ.get("WEB_HOST", "127.0.0.1")
+        self.web_port = int(os.environ.get("WEB_PORT", "8080"))
 
 
 class ICAPError(Exception):
@@ -695,9 +701,17 @@ def main(argv=None):
                         format="%(asctime)s %(levelname)s %(threadName)s %(message)s")
     server = build_server(config)
 
+    web = None
+    if config.web_port:
+        web = web_ui.build_web_server(config)
+        threading.Thread(target=web.serve_forever, daemon=True, name="web").start()
+        log.info("capture browser on http://%s:%d", config.web_host, config.web_port)
+
     def stop(signum, _frame):
         log.info("signal %d received, shutting down", signum)
         threading.Thread(target=server.shutdown, daemon=True).start()
+        if web:
+            threading.Thread(target=web.shutdown, daemon=True).start()
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
@@ -709,6 +723,8 @@ def main(argv=None):
         server.serve_forever()
     finally:
         server.server_close()
+        if web:
+            web.server_close()
         log.info("stopped")
     return 0
 

@@ -33,6 +33,26 @@ Point your gateway at:
 
 Every service path is accepted. `/reqmod` and `/respmod` only change what OPTIONS advertises.
 
+### Capture browser
+
+The container also serves a read-only web UI on port 8080:
+
+- `/` lists every captured transaction, with a filter on URL, user, client IP, or method.
+- `/forms` lists only web-form submissions (urlencoded or multipart), with each field's value and any uploaded file.
+- `/capture/<id>` shows the transaction details, form fields, headers, metadata, and file downloads.
+
+Files are always served as attachments, and only files listed in a capture's metadata can be fetched. There is no login, so publish the port on localhost only:
+
+```bash
+podman run -d --name forensics-icap \
+  -p 1344:1344 -p 127.0.0.1:8080:8080 \
+  -v ./captures:/data:Z \
+  --userns=keep-id:uid=1001,gid=1001 \
+  forensics-icap
+```
+
+Then open <http://127.0.0.1:8080/>. Set `WEB_PORT=0` to turn the UI off. The container listens on `WEB_HOST=0.0.0.0` by default, so exposing it beyond localhost is up to your port mapping.
+
 ### As a systemd service (Quadlet)
 
 ```bash
@@ -100,6 +120,8 @@ grep <sha256> captures/index.jsonl
 | `ICAP_MAX_CONNECTIONS` | `100`            | Advertised in OPTIONS |
 | `ICAP_SOCKET_TIMEOUT`  | `300`            | Idle socket timeout (seconds) |
 | `TLS_CERT`, `TLS_KEY`  | unset            | Turn on ICAPS when both are set |
+| `WEB_PORT`             | `8080`           | Capture browser port. `0` disables it. |
+| `WEB_HOST`             | `127.0.0.1`      | Capture browser bind address. The container image sets `0.0.0.0`. |
 | `LOG_LEVEL`            | `INFO`           | `DEBUG` logs each request |
 
 ## Development
@@ -108,6 +130,16 @@ grep <sha256> captures/index.jsonl
 python3 -m unittest discover -s tests -v     # end-to-end tests over real sockets
 CAPTURE_DIR=./captures python3 icap_server.py  # run without a container
 ```
+
+### Test bench (web UI)
+
+`testapp/` has a small web app that acts like a gateway. It sends file uploads, web-form posts (urlencoded, multipart, JSON), simulated downloads (RESPMOD) and raw bodies to the ICAP server. Then it checks `index.jsonl` to confirm that each one was captured.
+
+```bash
+python3 testapp/icap_test_app.py        # open http://127.0.0.1:8088
+```
+
+In the left panel, set the ICAP host/port, services, TLS, preview size, `Allow: 204`, the simulated user/IP and the capture directory. Settings are saved to `testapp/config.json`. Each test gets a unique `icap_test=<id>` in its URL. The app uses that ID to find the matching capture and lets you browse its metadata and files. If no container is running, the **Local ICAP server** card can start `icap_server.py` directly.
 
 Test with `c-icap-client` (package `c-icap`):
 
